@@ -59,6 +59,7 @@ namespace Itinero.IO.Osm.Streams
         }
 
         private long _idx = 0;
+        private bool _sorted = false;
 
         /// <summary>
         /// Adds a node id to the index.
@@ -136,6 +137,8 @@ namespace Itinero.IO.Osm.Streams
             }
             _index.Resize(_index.Length / 2);
             _idx = _index.Length;
+
+            _sorted = true;
         }
 
         /// <summary>
@@ -145,6 +148,19 @@ namespace Itinero.IO.Osm.Streams
         {
             get
             {
+                if (_sorted)
+                {
+                    var overflow = 0L;
+                    for (var i = 0; i < _overflows.Count; i++)
+                    {
+                        if (idx < _overflows[i])
+                        {
+                            break;
+                        }
+                        overflow += int.MaxValue;
+                    }
+                    return _index[idx] + overflow;
+                }
                 var int1 = _index[idx * 2 + 0];
                 var int2 = _index[idx * 2 + 1];
                 return doubleInt2long(int1, int2);
@@ -346,7 +362,7 @@ namespace Itinero.IO.Osm.Streams
         private long _previousIndex = long.MaxValue;
 
         /// <summary>
-        /// Gets the coordinate for the given node.
+        /// Gets the index for the given node in the data array.
         /// </summary>
         public long TryGetIndex(long id)
         {
@@ -473,7 +489,11 @@ namespace Itinero.IO.Osm.Streams
         {
             get
             {
-                return _index.Length;
+                if (_sorted)
+                {
+                    return _index.Length;
+                }
+                return _index.Length / 2;
             }
         }
     }
